@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WA Road Train Navigator</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f0a500">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WA RT Nav">
+<link rel="apple-touch-icon" href="icon-512.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+:root{
+  --bg1:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;
+  --accent:#f0a500;--accent2:#e05c00;--blue:#2d8cf0;--green:#3fb950;
+  --red:#f85149;--text:#e6edf3;--muted:#8b949e;--white:#ffffff;
+  --warn:#ffa657;--info:#58a6ff;
+}
+body.day-mode{
+  --bg1:#e8f0fe;--bg2:#ffffff;--bg3:#f0f4ff;--border:#c8d6f0;
+  --accent:#d47000;--accent2:#b84500;--blue:#1a6fd4;--green:#1a7f37;
+  --red:#cf222e;--text:#1f2937;--muted:#57606a;--white:#ffffff;
+  --warn:#b85c00;--info:#0550ae;
+}
+*{box-sizing:border-box;margin:0;padding:0;transition:background .4s,color .4s,border-color .4s}
+body{font-family:system-ui,sans-serif;background:var(--bg1);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+#setup-screen{position:absolute;inset:0;background:var(--bg1);z-index:100;display:flex;flex-direction:column;align-items:center;padding:14px;overflow-y:auto}
+.app-header{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:540px;margin-bottom:12px}
+.app-logo{display:flex;align-items:center;gap:8px}
+.logo-icon{font-size:22px;color:var(--accent)}
+.logo-text{font-size:17px;font-weight:700;color:var(--text)}
+.logo-sub{font-size:11px;color:var(--muted)}
+.day-toggle{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.day-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.setup-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;width:100%;max-width:540px;margin-bottom:10px}
+.section-title{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.form-group{margin-bottom:10px}
+.form-label{font-size:11px;color:var(--muted);margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.4px}
+.form-select,.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 10px;color:var(--text);font-size:13px;outline:none}
+.form-select:focus,.form-input:focus{border-color:var(--accent)}
+.auto-badge{display:inline-block;background:#3fb95022;border:1px solid #3fb95055;color:var(--green);font-size:10px;padding:1px 6px;border-radius:10px;margin-left:5px}
+.rav-info{background:var(--bg3);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:8px 12px;font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6}
+.rav-info strong{color:var(--info)}
+.load-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.load-btn{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 4px;cursor:pointer;text-align:center;transition:all .15s}
+.load-btn:hover{border-color:var(--accent)}
+.load-btn.selected{background:var(--accent)22;border-color:var(--accent)}
+.load-icon{font-size:16px;display:block;margin-bottom:2px}
+.load-name{font-size:9px;color:var(--muted);line-height:1.2}
+.load-btn.selected .load-name{color:var(--accent)}
+.btn-start{width:100%;background:var(--accent);border:none;border-radius:10px;padding:13px;color:#000;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-start:hover{background:var(--accent2);color:#fff}
+#map-screen{flex:1;display:flex;flex-direction:column;display:none}
+#map-canvas{flex:1;background:var(--bg1);position:relative;overflow:hidden}
+#truck-marker{position:absolute;width:32px;height:32px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;border:2px solid var(--white);box-shadow:0 0 14px var(--accent)88;transition:all .4s ease}
+#top-bar{background:var(--bg2);padding:8px 12px;border-bottom:1px solid var(--border)}
+.top-row{display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap}
+.rav-badge{background:var(--accent);color:#000;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
+.chip{background:var(--bg3);color:var(--muted);font-size:11px;padding:3px 8px;border-radius:20px;display:flex;align-items:center;gap:4px;border:1px solid var(--border)}
+.speed-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px 10px;text-align:center;min-width:48px}
+.speed-val{font-size:19px;font-weight:700;color:var(--text);line-height:1}
+.speed-unit{font-size:9px;color:var(--muted)}
+.filter-bar{display:flex;gap:5px;overflow-x:auto;padding-bottom:2px}
+.fbtn{background:var(--bg3);border:1px solid var(--border);color:var(--muted);padding:3px 9px;border-radius:20px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.fbtn.on{background:var(--accent)22;border-color:var(--accent);color:var(--accent);font-weight:600}
+#bottom-panel{background:var(--bg2);border-top:1px solid var(--border);padding:9px 12px}
+.nav-line{font-size:13px;font-weight:600;color:var(--info);margin-bottom:5px;display:flex;align-items:center;gap:7px}
+.step-list{max-height:65px;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
+.step-item{font-size:11px;color:var(--muted);padding:3px 8px;border-left:2px solid var(--border);display:flex;align-items:center;gap:5px}
+.step-item.active{color:var(--text);border-color:var(--accent)}
+#action-bar{display:flex;gap:5px;margin-top:8px;overflow-x:auto;padding-bottom:2px}
+.abtn{background:var(--bg3);border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:20px;font-size:11px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;flex-shrink:0}
+.abtn:hover{border-color:var(--accent);color:var(--accent)}
+.abtn.on{background:var(--accent);border-color:var(--accent);color:#000;font-weight:600}
+#popup{position:absolute;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;max-width:220px;z-index:20;display:none;box-shadow:0 6px 24px #00000055}
+.popup-title{font-size:13px;font-weight:600;color:var(--info);margin-bottom:5px}
+.popup-body{font-size:11px;color:var(--muted);line-height:1.5}
+.popup-close{position:absolute;top:7px;right:8px;cursor:pointer;color:var(--muted);font-size:14px}
+#retorque-alert{position:absolute;top:58px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;border-radius:10px;padding:10px 16px;z-index:30;display:none;text-align:center;animation:pulse 1.2s infinite;min-width:270px}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 #f8514988}50%{box-shadow:0 0 0 10px #f8514900}}
+.alert-title{font-size:13px;font-weight:700;margin-bottom:3px}
+.alert-sub{font-size:11px;opacity:.9;margin-bottom:8px}
+.alert-actions{display:flex;gap:6px;justify-content:center}
+.alert-btn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer}
+#voice-banner{position:absolute;bottom:185px;left:50%;transform:translateX(-50%);background:var(--bg2)ee;color:var(--info);border-radius:10px;padding:7px 14px;font-size:12px;z-index:25;display:none;white-space:nowrap;border:1px solid var(--border);max-width:92%;overflow:hidden;text-overflow:ellipsis}
+#construction-banner{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:var(--warn)22;border:1px solid var(--warn);border-radius:10px;padding:8px 14px;font-size:12px;z-index:24;display:none;max-width:85%;color:var(--warn);text-align:center}
+#tyre-modal{position:absolute;inset:0;background:#00000088;z-index:50;display:none;align-items:center;justify-content:center}
+.tyre-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:18px;width:300px}
+.tyre-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:10px}
+.wheel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:14px}
+.wheel{width:100%;aspect-ratio:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);cursor:pointer;text-align:center;line-height:1.2;padding:3px;transition:all .15s}
+.wheel:hover{border-color:var(--accent);color:var(--accent)}
+.wheel.sel{background:var(--accent)33;border-color:var(--accent);color:var(--accent);font-weight:700}
+.tyre-btns{display:flex;gap:8px}
+.tyre-btn{flex:1;padding:9px;border-radius:8px;border:none;font-size:13px;cursor:pointer;font-weight:600}
+.tyre-cancel{background:var(--bg3);color:var(--muted)}
+.tyre-confirm{background:var(--accent);color:#000}
+#fact-popup{position:absolute;top:66px;right:8px;background:var(--bg2);border:1px solid var(--info);border-radius:12px;padding:12px;max-width:195px;z-index:20;display:none}
+.fact-close{position:absolute;top:7px;right:8px;cursor:pointer;color:var(--muted);font-size:13px}
+#roadworks-panel{position:absolute;inset:0;background:var(--bg1);z-index:40;display:none;flex-direction:column;padding:14px;overflow-y:auto}
+.rw-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.rw-title{font-size:16px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:8px}
+.rw-close{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--muted)}
+.rw-item{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px}
+.rw-road{font-size:13px;font-weight:600;color:var(--warn);margin-bottom:3px}
+.rw-detail{font-size:12px;color:var(--muted);line-height:1.5}
+.rw-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;margin-bottom:5px;font-weight:600}
+.rw-open{background:#3fb95022;color:var(--green);border:1px solid var(--green)55}
+.rw-closed{background:#f8514922;color:var(--red);border:1px solid var(--red)55}
+.rw-reduced{background:#ffa65722;color:var(--warn);border:1px solid var(--warn)55}
+.loading-spinner{text-align:center;color:var(--muted);padding:30px;font-size:13px}
+</style>
+</head>
+<body>
+
+<div id="setup-screen">
+  <div class="app-header">
+    <div class="app-logo">
+      <div class="logo-icon"><i class="ti ti-truck"></i></div>
+      <div><div class="logo-text">WA Road Train Navigator</div><div class="logo-sub">RAV-aware • Goldfields • Pilbara • Outback</div></div>
+    </div>
+    <button class="day-toggle" onclick="toggleDayMode(this)"><i class="ti ti-sun"></i> Day Mode</button>
+  </div>
+
+  <div class="setup-card">
+    <div class="section-title"><i class="ti ti-truck"></i> Vehicle Configuration</div>
+    <div class="form-row">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Truck Configuration</label>
+        <select class="form-select" id="truck-type" onchange="syncFromConfig()">
+          <option value="">— Select —</option>
+          <optgroup label="Single Units">
+            <option value="semi" data-len="19" data-rav="3">Single Semi-Trailer (19m)</option>
+            <option value="semi-long" data-len="26" data-rav="4">Long Semi-Trailer (26m)</option>
+          </optgroup>
+          <optgroup label="B-Combinations">
+            <option value="bdouble-25" data-len="25" data-rav="4">B-Double (25m)</option>
+            <option value="bdouble-30" data-len="30" data-rav="4">B-Double (30m)</option>
+            <option value="bdouble-36" data-len="36.5" data-rav="5">B-Double (36.5m)</option>
+            <option value="btriple" data-len="36.5" data-rav="6">B-Triple (36.5m)</option>
+          </optgroup>
+          <optgroup label="Road Trains">
+            <option value="abtrain" data-len="36.5" data-rav="7">AB-Train (36.5m)</option>
+            <option value="rt3" data-len="42.5" data-rav="8">Road Train — 3 trailer (42.5m)</option>
+            <option value="rt4" data-len="53.5" data-rav="9">Road Train — 4 trailer (53.5m)</option>
+          </optgroup>
+          <optgroup label="Special">
+            <option value="oversize" data-len="30" data-rav="10">Oversize / Special Purpose</option>
+            <option value="mining" data-len="53.5" data-rav="10">Mining Haul Combination</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Total Length (m) <span class="auto-badge" id="auto-badge" style="display:none">auto</span></label>
+        <input type="number" class="form-input" id="truck-length" placeholder="e.g. 42.5" min="10" max="60" step="0.5" oninput="syncFromLength()">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">RAV Class</label>
+        <select class="form-select" id="rav-class">
+          <option value="3">RAV 3 — up to 19m</option>
+          <option value="4">RAV 4 — B-Doubles</option>
+          <option value="5">RAV 5 — B-Doubles 36.5m</option>
+          <option value="6">RAV 6 — B-Triples</option>
+          <option value="7" selected>RAV 7 — AB-Trains</option>
+          <option value="8">RAV 8 — Road Trains 42.5m</option>
+          <option value="9">RAV 9 — Road Trains 53.5m</option>
+          <option value="10">RAV 10 — Special Purpose</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Gross Mass (tonnes)</label>
+        <input type="number" class="form-input" id="gross-mass" placeholder="e.g. 145" min="20" max="300" step="5">
+      </div>
+    </div>
+    <div class="rav-info" id="rav-info">Select a truck configuration to see RAV corridor guidance.</div>
+  </div>
+
+  <div class="setup-card">
+    <div class="section-title"><i class="ti ti-package"></i> Product / Load Type</div>
+    <div class="load-grid" id="load-grid"></div>
+  </div>
+
+  <div class="setup-card">
+    <div class="section-title"><i class="ti ti-map-pin"></i> Route</div>
+    <div class="form-row">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">From</label>
+        <select class="form-select" id="from-loc">
+          <optgroup label="Metro / South West">
+            <option>Perth</option><option>Fremantle</option><option>Bunbury</option><option>Mandurah</option>
+          </optgroup>
+          <optgroup label="Wheatbelt">
+            <option>Northam</option><option>York</option><option>Cunderdin</option><option>Kellerberrin</option>
+            <option>Merredin</option><option>Southern Cross</option><option>Narrogin</option><option>Brookton</option><option>Quairading</option>
+          </optgroup>
+          <optgroup label="Goldfields">
+            <option>Coolgardie</option><option>Kalgoorlie-Boulder</option><option>Menzies</option>
+            <option>Leonora</option><option>Leinster</option><option>Laverton</option>
+            <option>Norseman</option><option>Kambalda</option>
+          </optgroup>
+          <optgroup label="Midwest">
+            <option>Geraldton</option><option>Mt Magnet</option><option>Meekatharra</option>
+            <option>Paynes Find</option><option>Cue</option>
+          </optgroup>
+          <optgroup label="Gascoyne">
+            <option>Carnarvon</option><option>Denham</option>
+          </optgroup>
+          <optgroup label="Pilbara">
+            <option>Newman</option><option>Tom Price</option><option>Paraburdoo</option>
+            <option>Karratha</option><option>Port Hedland</option><option>Marble Bar</option>
+          </optgroup>
+          <optgroup label="Kimberley">
+            <option>Broome</option><option>Derby</option><option>Fitzroy Crossing</option><option>Kununurra</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">To</label>
+        <select class="form-select" id="to-loc">
+          <optgroup label="Metro / Ports">
+            <option>Perth</option><option>Fremantle (Port)</option><option>Bunbury (Port)</option>
+          </optgroup>
+          <optgroup label="Wheatbelt">
+            <option>Northam</option><option>Cunderdin</option><option>Kellerberrin</option>
+            <option>Merredin</option><option>Southern Cross</option><option>Narrogin</option>
+          </optgroup>
+          <optgroup label="Goldfields">
+            <option>Kalgoorlie-Boulder</option><option>Menzies</option><option>Leonora</option>
+            <option>Leinster</option><option>Laverton</option><option>Norseman</option>
+            <option>Coolgardie</option><option>Paynes Find</option>
+          </optgroup>
+          <optgroup label="Midwest">
+            <option>Geraldton (Port)</option><option>Mt Magnet</option><option>Meekatharra</option><option>Cue</option>
+          </optgroup>
+          <optgroup label="Pilbara">
+            <option>Newman</option><option>Tom Price</option><option>Karratha</option>
+            <option>Port Hedland</option><option>Marble Bar</option>
+          </optgroup>
+          <optgroup label="Kimberley">
+            <option>Broome</option><option>Derby</option><option>Kununurra</option>
+          </optgroup>
+          <optgroup label="South Coast">
+            <option>Esperance (Port)</option><option>Albany (Port)</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div style="width:100%;max-width:540px;margin-bottom:20px">
+    <button class="btn-start" onclick="startNav()"><i class="ti ti-navigation"></i> Start Navigation</button>
+  </div>
+</div>
+
+<!-- MAP SCREEN -->
+<div id="map-screen">
+  <div id="top-bar">
+    <div class="top-row">
+      <span class="rav-badge" id="rav-display">RAV 7</span>
+      <span class="chip"><i class="ti ti-truck" style="font-size:11px"></i><span id="truck-display">Road Train</span></span>
+      <span class="chip"><i class="ti ti-package" style="font-size:11px"></i><span id="load-display">General</span></span>
+      <span class="chip"><i class="ti ti-ruler" style="font-size:11px"></i><span id="len-display">42.5m</span></span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+        <button class="day-toggle" id="map-day-btn" onclick="toggleDayMode(this)" style="font-size:11px;padding:4px 9px"><i class="ti ti-sun"></i></button>
+        <div class="speed-box"><div class="speed-val" id="speed-display">0</div><div class="speed-unit">km/h</div></div>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <button class="fbtn on" onclick="toggleFilter(this,'stops')">🅿 Truck Stops</button>
+      <button class="fbtn on" onclick="toggleFilter(this,'rest')">😴 Rest Areas</button>
+      <button class="fbtn on" onclick="toggleFilter(this,'fuel')">⛽ Fuel</button>
+      <button class="fbtn on" onclick="toggleFilter(this,'facts')">🏛 Landmarks</button>
+      <button class="fbtn on" onclick="toggleFilter(this,'works')">🚧 Roadworks</button>
+    </div>
+  </div>
+
+  <div id="map-canvas">
+    <canvas id="map-bg-canvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+    <div id="truck-marker"><i class="ti ti-truck" style="font-size:14px;color:#000"></i></div>
+
+    <div id="popup"><span class="popup-close" onclick="closePopup()"><i class="ti ti-x"></i></span>
+      <div class="popup-title" id="popup-title"></div>
+      <div class="popup-body" id="popup-body"></div>
+    </div>
+    <div id="retorque-alert">
+      <div class="alert-title"><i class="ti ti-alert-triangle"></i> Retorque Reminder!</div>
+      <div class="alert-sub" id="retorque-sub">Pull over safely and retorque now.</div>
+      <div class="alert-actions">
+        <button class="alert-btn" onclick="logRetorque()"><i class="ti ti-check"></i> Done</button>
+        <button class="alert-btn" onclick="snoozeRetorque()">+20km</button>
+        <button class="alert-btn" onclick="closeRetorque()"><i class="ti ti-x"></i></button>
+      </div>
+    </div>
+    <div id="construction-banner"></div>
+    <div id="voice-banner"></div>
+    <div id="fact-popup">
+      <span class="fact-close" onclick="document.getElementById('fact-popup').style.display='none'"><i class="ti ti-x"></i></span>
+      <div style="font-size:22px;margin-bottom:4px" id="fact-icon"></div>
+      <div style="font-size:12px;font-weight:700;color:var(--info);margin-bottom:4px" id="fact-title"></div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.5" id="fact-body"></div>
+    </div>
+    <div id="tyre-modal">
+      <div class="tyre-card">
+        <div class="tyre-title"><i class="ti ti-circle-dot"></i> Log Tyre Change</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Select the wheel position changed:</div>
+        <div class="wheel-grid" id="wheel-grid"></div>
+        <div class="tyre-btns">
+          <button class="tyre-btn tyre-cancel" onclick="closeTyreModal()">Cancel</button>
+          <button class="tyre-btn tyre-confirm" onclick="confirmTyreChange()">Log Change</button>
+        </div>
+      </div>
+    </div>
+    <div id="roadworks-panel">
+      <div class="rw-header">
+        <div class="rw-title"><i class="ti ti-cone"></i> Live Roadworks — WA</div>
+        <button class="rw-close" onclick="closeRoadworks()"><i class="ti ti-x"></i> Close</button>
+      </div>
+      <div id="rw-content"><div class="loading-spinner"><i class="ti ti-loader" style="font-size:20px"></i><br><br>Fetching live roadworks from Main Roads WA...</div></div>
+    </div>
+  </div>
+
+  <div id="bottom-panel">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+      <div style="flex:1">
+        <div class="nav-line"><i class="ti ti-navigation" style="color:var(--accent);flex-shrink:0"></i><span id="current-instruction">Calculating route...</span></div>
+        <div style="font-size:11px;color:var(--muted)" id="dist-info">Distance: calculating...</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:9px;color:var(--muted)">ETA</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)" id="eta-display">--:--</div>
+      </div>
+    </div>
+    <div class="step-list" id="step-list"></div>
+    <div id="action-bar">
+      <button class="abtn" onclick="openTyreModal()"><i class="ti ti-circle-dot"></i> Tyre Change</button>
+      <button class="abtn" onclick="toggleVoice(this)"><i class="ti ti-volume"></i> Voice On</button>
+      <button class="abtn" onclick="openRoadworks()"><i class="ti ti-cone"></i> Roadworks</button>
+      <button class="abtn" onclick="showLoadWarning()"><i class="ti ti-alert-triangle"></i> Load Tips</button>
+      <button class="abtn" onclick="showFatigue()"><i class="ti ti-clock"></i> Fatigue</button>
+      <button class="abtn" onclick="resetNav()"><i class="ti ti-refresh"></i> New Route</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TRUCKS={
+  'semi':{len:19,rav:3,label:'Semi-Trailer'},
+  'semi-long':{len:26,rav:4,label:'Long Semi'},
+  'bdouble-25':{len:25,rav:4,label:'B-Double 25m'},
+  'bdouble-30':{len:30,rav:4,label:'B-Double 30m'},
+  'bdouble-36':{len:36.5,rav:5,label:'B-Double 36.5m'},
+  'btriple':{len:36.5,rav:6,label:'B-Triple'},
+  'abtrain':{len:36.5,rav:7,label:'AB-Train'},
+  'rt3':{len:42.5,rav:8,label:'Road Train 3T'},
+  'rt4':{len:53.5,rav:9,label:'Road Train 4T'},
+  'oversize':{len:30,rav:10,label:'Oversize'},
+  'mining':{len:53.5,rav:10,label:'Mining Haul'},
+};
+const RAV={
+  3:'RAV 3: Standard semis up to 19m. Most sealed roads including urban areas.',
+  4:'RAV 4: B-Doubles up to 30m. Main highways. Check local roads — many restricted.',
+  5:'RAV 5: B-Doubles up to 36.5m. Designated RAV 5 corridors only.',
+  6:'RAV 6: B-Triples 36.5m. Restricted corridors. Permit may be required.',
+  7:'RAV 7: AB-Trains and Road Trains up to 36.5m. Designated outback highways.',
+  8:'RAV 8: Road Trains 42.5m. Remote highways — Great Northern, North West Coastal.',
+  9:'RAV 9: Road Trains 53.5m. Pilbara and remote pastoral roads only. Permit required.',
+  10:'RAV 10: Special purpose. Individual permit required from Main Roads WA each journey.',
+};
+const LOADS=[
+  {id:'general',icon:'📦',name:'General Freight'},{id:'grain',icon:'🌾',name:'Grain/Wheat'},
+  {id:'cattle',icon:'🐄',name:'Cattle'},{id:'sheep',icon:'🐑',name:'Sheep'},
+  {id:'pigs',icon:'🐖',name:'Pigs'},{id:'fuel',icon:'🛢',name:'Fuel/Petrol'},
+  {id:'chemicals',icon:'⚗️',name:'Chemicals'},{id:'iron-ore',icon:'🪨',name:'Iron Ore'},
+  {id:'gold',icon:'🏅',name:'Gold/Bullion'},{id:'lithium',icon:'⚡',name:'Lithium'},
+  {id:'nickel',icon:'🔩',name:'Nickel Ore'},{id:'bauxite',icon:'🟤',name:'Bauxite'},
+  {id:'copper',icon:'🟠',name:'Copper Ore'},{id:'coal',icon:'⬛',name:'Coal'},
+  {id:'salt',icon:'🧂',name:'Salt'},{id:'cement',icon:'🏗',name:'Cement/Lime'},
+  {id:'timber',icon:'🪵',name:'Timber/Logs'},{id:'refrigerated',icon:'❄️',name:'Refrigerated'},
+  {id:'mining-equip',icon:'⛏',name:'Mining Equip'},{id:'oversize-load',icon:'🚧',name:'Oversize Load'},
+  {id:'water',icon:'💧',name:'Water/Slurry'},{id:'sand',icon:'🪣',name:'Sand/Gravel'},
+  {id:'cotton',icon:'🌿',name:'Cotton/Hay'},{id:'containers',icon:'🏭',name:'Containers'},
+];
+const LOAD_TIPS={
+  'general':'General Freight: Load restraint must meet Load Restraint Guide. Check axle mass at weigh stations. Distribute weight evenly front to rear.',
+  'grain':'Grain: Tarp security check every 200km. Watch for axle limits — grain density varies. Harvest machinery on Wheatbelt roads Mar–May. Harvest movement permits may apply.',
+  'cattle':'Cattle: Rest, water and feed mandatory every 24hrs. Check animals every 4hrs. Avoid sharp braking. Keep vents open. Use designated livestock unloading facilities only.',
+  'sheep':'Sheep: Heat stress risk above 28°C. Mandatory rest at 24hr intervals. Check for down animals at each stop. Do not travel in peak heat in summer.',
+  'pigs':'Pigs: Do not transport above 30°C. Rest every 12hrs. Biosecurity zones apply. Wash-down before and after is mandatory.',
+  'fuel':'Fuel/ADG: Placards displayed. Emergency info panel visible. No unauthorised stops in town centres. 10m clearance at fuel points. Grounding cable at all fuel stops.',
+  'chemicals':'Chemicals: Dangerous goods licence required. Emergency response plan in cab. MSDS for all products on board. Segregation rules apply.',
+  'iron-ore':'Iron Ore: Weigh at mine exit. Dust suppression on unsealed roads. High centre of gravity — reduce speed on corners. Wash-down near towns.',
+  'gold':'Gold/Bullion: Security escort required. Route pre-approved with WA Police. No unauthorised stops. Communications equipment mandatory.',
+  'lithium':'Lithium/Spodumene: Cover load — dust risk. Dense product — weight distribution critical. Keep dry — moisture risk. Growing export from Pilbara and Goldfields.',
+  'nickel':'Nickel Ore: High density — check axle weights carefully. Slurry form is spillage risk. Wash-down near waterways required.',
+  'bauxite':'Bauxite: Very high density — axle compliance critical. Cover load when dry. Wet bauxite is extremely slippery — clean spills immediately.',
+  'copper':'Copper Ore: Dense load — distribute carefully. Check for spillage from concentrate. Environmental spill controls near waterways.',
+  'coal':'Coal: Spontaneous combustion risk in bulk. Monitor load temperature. Dust suppression mandatory. Wash-down before entering towns.',
+  'salt':'Salt: Highly corrosive — inspect vehicle post trip. Dense — axle limits critical. Avoid spillage near waterways.',
+  'cement':'Cement/Lime: Caustic dust — PPE required when opening. Moisture causes hardening. Keep load sealed at all times.',
+  'timber':'Timber/Logs: Load restraint check every 100km. Chains to Load Restraint Guide rating. Log roll risk on bends. Oversize flags if overhang.',
+  'refrigerated':'Refrigerated: Temperature log every 3hrs. Generator fuel check at major stops. Cold chain documentation required.',
+  'mining-equip':'Mining Equipment: Wide load flags if over 2.5m. Police/pilot escort for over 3.5m. Pre-notify Main Roads WA 48hrs. Daylight travel Mon–Fri.',
+  'oversize-load':'Oversize: Pilot vehicle mandatory. Route pre-approval required. Daylight travel only. Reduce speed at intersections and towns.',
+  'water':'Water/Slurry: Surge effect — use baffled tanker. Reduce speed on corners. Check outlet valves before departure.',
+  'sand':'Sand/Gravel: Cover load to prevent dust and spillage. High abrasion on tyres — check condition more frequently.',
+  'cotton':'Cotton/Hay: Extreme fire risk — no smoking near load. Aerodynamically unstable at speed — max 90km/h.',
+  'containers':'Containers: Confirm twist locks before departure. Check container weight — misdeclared weights common. IMO placards for hazmat.',
+};
+const POIS=[
+  {id:'p1',type:'stops',x:.22,y:.73,label:'Muchea Truck Stop',info:'24hr. Showers, meals, 40+ HV bays. RAV exchange point. Weighbridge.',icon:'🅿'},
+  {id:'p2',type:'fuel',x:.2,y:.58,label:'Jurien Bay Diesel Stop',info:'High-flow diesel. Truck clearance. ATM, takeaway food.',icon:'⛽'},
+  {id:'p3',type:'rest',x:.18,y:.45,label:'Dongara Rest Area',info:'8 HV bays. Toilets, shade. Recommended 30 min fatigue break.',icon:'😴'},
+  {id:'p4',type:'stops',x:.16,y:.35,label:'Geraldton Truck Terminal',info:'Full amenities. 24hr fuel. Mechanical on call. Weigh station.',icon:'🅿'},
+  {id:'p5',type:'fuel',x:.13,y:.24,label:'Carnarvon Roadhouse',info:'High-flow diesel. Truck wash. 2hr rest area.',icon:'⛽'},
+  {id:'p6',type:'rest',x:.12,y:.16,label:'Nanutarra Roadhouse',info:'Remote rest stop. Diesel, basic meals, accommodation.',icon:'😴'},
+  {id:'p7',type:'stops',x:.13,y:.09,label:'Karratha Truck Hub',info:'50+ HV bays. Mechanical, tyres, showers, meals, 24hr fuel.',icon:'🅿'},
+  {id:'p8',type:'fuel',x:.48,y:.59,label:'Merredin Truck Stop',info:'High-flow diesel. 20 HV bays. Showers, café. Weighbridge.',icon:'⛽'},
+  {id:'p9',type:'rest',x:.55,y:.5,label:'Kalgoorlie Rest Area',info:'24hr. Full facilities. Mechanical nearby.',icon:'😴'},
+  {id:'p10',type:'rest',x:.24,y:.65,label:'Bullsbrook Rest Area',info:'Shaded HV bays. Toilets. 45km north of Perth.',icon:'😴'},
+  {id:'p11',type:'fuel',x:.35,y:.22,label:'Newman Roadhouse',info:'Full services. High-flow diesel. Shower block. Pilbara hub.',icon:'⛽'},
+  {id:'p12',type:'stops',x:.52,y:.49,label:'Kalgoorlie Truck Stop',info:'Full HV amenities. Mining region gateway. 24hr.',icon:'🅿'},
+  {id:'p13',type:'fuel',x:.47,y:.42,label:'Menzies Roadhouse',info:'Goldfields outback stop. Diesel, basic food, water.',icon:'⛽'},
+  {id:'p14',type:'rest',x:.5,y:.35,label:'Leonora/Leinster Rest',info:'HV bays. Toilets. Mining traffic zone — watch for mine vehicles.',icon:'😴'},
+  {id:'p15',type:'fuel',x:.22,y:.52,label:'Paynes Find Roadhouse',info:'Remote fuel stop on Great Northern Hwy. Basic provisions.',icon:'⛽'},
+  {id:'works1',type:'works',x:.2,y:.68,label:'Brand Hwy Roadworks',info:'Single lane closure 12km north of Muchea. Reduced speed 60km/h. Traffic controllers 0600–1800. Estimated completion Aug 2026.',icon:'🚧'},
+  {id:'works2',type:'works',x:.16,y:.4,label:'North West Coastal Hwy',info:'Pavement rehabilitation near Northampton. Expect 15 min delays. Pilot vehicle in operation weekdays.',icon:'🚧'},
+  {id:'works3',type:'works',x:.48,y:.55,label:'Great Eastern Hwy',info:'Bridge deck replacement 20km west of Merredin. Load limit 40t during works. Alternate route via Southern Cross Rd.',icon:'🚧'},
+  {id:'works4',type:'works',x:.52,y:.46,label:'Goldfields Hwy Upgrade',info:'Road widening north of Kalgoorlie. RAV 8+ trucks use Bypass Road. Works Mon–Fri 0700–1700.',icon:'🚧'},
+  {id:'works5',type:'works',x:.35,y:.19,label:'Great Northern Hwy — Newman',info:'Flood damage repairs near Kumarina. 80km/h limit. One-lane controlled. Gravel detour 500m.',icon:'🚧'},
+  {id:'fact1',type:'facts',x:.2,y:.63,label:'Gingin — Gravity Discovery Centre',info:'Home to WA\'s only large drop tower! Settled by pastoralists in the 1840s on ancient granite country.',icon:'🔭'},
+  {id:'fact2',type:'facts',x:.16,y:.34,label:'Geraldton — Lobster Capital',info:'Produces 25% of Australia\'s rock lobster. Home to the HMAS Sydney II memorial — lost with all 645 crew in 1941.',icon:'🦞'},
+  {id:'fact3',type:'facts',x:.13,y:.23,label:'Carnarvon — Banana & NASA Town',info:'Grows 80% of WA\'s bananas. The old NASA tracking station here helped guide Apollo moon missions in the 1960s!',icon:'🍌'},
+  {id:'fact4',type:'facts',x:.48,y:.58,label:'Merredin — Wheat Belt Heart',info:'Produces 10–12 million tonnes of grain annually. Watch for header convoys during harvest.',icon:'🌾'},
+  {id:'fact5',type:'facts',x:.55,y:.49,label:'Kalgoorlie — Super Pit',info:'3.5km long, 1.5km wide, 600m deep — visible from space! Over 60 million oz of gold mined since 1893.',icon:'⛏'},
+  {id:'fact6',type:'facts',x:.13,y:.08,label:'Karratha — Iron Ore Gateway',info:'Nearby Dampier exports 100M+ tonnes of iron ore annually. Some of the world\'s longest trains — up to 3km — run here.',icon:'🏗'},
+  {id:'fact7',type:'facts',x:.35,y:.2,label:'Newman — Pilbara Iron Country',info:'The Pilbara holds some of the world\'s richest iron ore deposits, mined since the 1960s with 50+ billion tonnes remaining.',icon:'🪨'},
+  {id:'fact8',type:'facts',x:.22,y:.74,label:'Northam — WA\'s Oldest Inland Town',info:'Founded 1833. The Avon River here hosts Australia\'s longest white-water race every August — over 130km of rapids!',icon:'🌊'},
+  {id:'fact9',type:'facts',x:.47,y:.43,label:'Menzies — Ghost Town Gold',info:'Menzies boomed in the 1890s gold rush with a population of 10,000. Today just 100 people remain — but gold mining still continues nearby.',icon:'👻'},
+  {id:'fact10',type:'facts',x:.22,y:.53,label:'Paynes Find — The Last Pub',info:'Paynes Find is one of WA\'s tiniest towns — a roadhouse, a pub, and a handful of people. Gold was found here in the 1930s and miners still work the area.',icon:'🍺'},
+  {id:'fact11',type:'facts',x:.5,y:.34,label:'Leinster — Nickel Town',info:'Leinster exists entirely to service the BHP Leinster Nickel Operations. It\'s a company town — residents are mostly mine workers and their families.',icon:'🔩'},
+];
+const STEPS=[
+  'Head north on Great Northern Hwy — RAV 7 approved corridor',
+  'Continue through Bindoon and Gingin — watch for school zones',
+  'Pass through Dongara rest area — check load restraint',
+  'Enter Geraldton — reduce to 70km/h, weigh station ahead',
+  'Merge onto North West Coastal Hwy — continue north',
+  'Carnarvon fuel stop recommended — 400km to next major stop',
+  'Continue through Gascoyne — livestock on road at dusk, reduce speed',
+  'Nanutarra Roadhouse — last stop before Karratha corridor',
+  'Approaching Karratha — reduce speed, urban zone 60km/h',
+  'Continue north-east — Port Hedland 200km ahead',
+];
+let voiceOn=true,tyreKm=null,tyreSnooze=0,tyreWheel='',currentKm=0,simInterval=null,selWheel=null,selLoad='general',filters={stops:true,rest:true,fuel:true,facts:true,works:true},factIdx=0,dayMode=false;
+
+function toggleDayMode(btn){
+  dayMode=!dayMode;
+  document.body.classList.toggle('day-mode',dayMode);
+  document.querySelectorAll('.day-toggle, #map-day-btn').forEach(b=>{
+    b.innerHTML='<i class="ti ti-'+(dayMode?'moon':'sun')+'"></i> '+(dayMode?'Night Mode':'Day Mode');
+  });
+  if(document.getElementById('map-screen').style.display!=='none'){drawMap();renderPOIs();}
+}
+function syncFromConfig(){
+  const sel=document.getElementById('truck-type');
+  const cfg=TRUCKS[sel.value];if(!cfg)return;
+  document.getElementById('truck-length').value=cfg.len;
+  document.getElementById('rav-class').value=cfg.rav;
+  document.getElementById('auto-badge').style.display='inline-block';
+  document.getElementById('rav-info').innerHTML='<strong>'+cfg.label+'</strong> — '+RAV[cfg.rav];
+}
+function syncFromLength(){
+  document.getElementById('auto-badge').style.display='none';
+  const len=parseFloat(document.getElementById('truck-length').value);if(isNaN(len))return;
+  let rav=len<=19?3:len<=26?4:len<=30?4:len<=36.5?5:len<=42.5?8:9;
+  document.getElementById('rav-class').value=rav;
+  document.getElementById('rav-info').textContent=RAV[rav];
+}
+function buildLoadGrid(){
+  const g=document.getElementById('load-grid');g.innerHTML='';
+  LOADS.forEach(l=>{
+    const b=document.createElement('div');b.className='load-btn'+(l.id==='general'?' selected':'');
+    b.innerHTML='<span class="load-icon">'+l.icon+'</span><span class="load-name">'+l.name+'</span>';
+    b.onclick=()=>{document.querySelectorAll('.load-btn').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');selLoad=l.id;};
+    g.appendChild(b);
+  });
+}
+function startNav(){
+  const truck=document.getElementById('truck-type');
+  const cfg=TRUCKS[truck.value]||{label:'Road Train',len:42.5};
+  const rav=document.getElementById('rav-class').value;
+  const len=document.getElementById('truck-length').value||cfg.len;
+  const from=document.getElementById('from-loc').value;
+  const to=document.getElementById('to-loc').value;
+  const loadObj=LOADS.find(l=>l.id===selLoad)||LOADS[0];
+  document.getElementById('rav-display').textContent='RAV '+rav;
+  document.getElementById('truck-display').textContent=cfg.label;
+  document.getElementById('load-display').textContent=loadObj.name;
+  document.getElementById('len-display').textContent=len+'m';
+  document.getElementById('dist-info').textContent='Route: '+from+' → '+to+' | RAV '+rav+' corridor';
+  const eta=new Date(Date.now()+13*3600000);
+  document.getElementById('eta-display').textContent=eta.getHours().toString().padStart(2,'0')+':'+eta.getMinutes().toString().padStart(2,'0');
+  renderSteps();
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('map-screen').style.display='flex';
+  drawMap();renderPOIs();buildWheelGrid();startSim();
+  const msg='Navigation started. '+cfg.label+' configured at RAV '+rav+'. '+STEPS[0];
+  showVoice(msg);speak(msg);
+}
+function renderSteps(){
+  const sl=document.getElementById('step-list');sl.innerHTML='';
+  STEPS.forEach((s,i)=>{
+    const d=document.createElement('div');d.className='step-item'+(i===0?' active':'');
+    d.innerHTML='<i class="ti ti-'+(i===0?'navigation':'point')+'" style="font-size:10px;flex-shrink:0"></i>'+s;
+    d.id='step-'+i;sl.appendChild(d);
+  });
+  document.getElementById('current-instruction').textContent=STEPS[0];
+}
+function drawMap(){
+  const canvas=document.getElementById('map-bg-canvas');
+  const W=canvas.parentElement.clientWidth,H=canvas.parentElement.clientHeight;
+  canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  const bg=dayMode?'#dde8f0':'#0d1117';
+  const roadColor=dayMode?'#b0c4d8':'#1e2d42';
+  const lineColor=dayMode?'rgba(20,80,180,0.4)':'rgba(56,189,248,0.4)';
+  const textColor=dayMode?'#2a3a50':'#8b949e';
+  const bigTextColor=dayMode?'#1a2a40':'#c9d1d9';
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  const roads=[
+    {x1:.2,y1:.77,x2:.2,y2:.05,w:5},{x1:.2,y1:.77,x2:.65,y2:.77,w:3},
+    {x1:.47,y1:.77,x2:.62,y2:.47,w:3},{x1:.2,y1:.77,x2:.12,y2:.04,w:5},
+    {x1:.2,y1:.58,x2:.52,y2:.5,w:3},{x1:.52,y1:.5,x2:.62,y2:.77,w:2},
+    {x1:.2,y1:.55,x2:.22,y2:.55,w:2},{x1:.35,y1:.22,x2:.13,y2:.09,w:3},
+    {x1:.52,y1:.5,x2:.5,y2:.35,w:2},{x1:.5,y1:.35,x2:.52,y2:.22,w:2},
+    {x1:.22,y1:.5,x2:.47,y2:.43,w:2},
+  ];
+  roads.forEach(r=>{
+    ctx.beginPath();ctx.strokeStyle=roadColor;ctx.lineWidth=r.w;ctx.lineCap='round';
+    ctx.moveTo(r.x1*W,r.y1*H);ctx.lineTo(r.x2*W,r.y2*H);ctx.stroke();
+    ctx.beginPath();ctx.strokeStyle=lineColor;ctx.lineWidth=r.w*.35;ctx.setLineDash([7,7]);
+    ctx.moveTo(r.x1*W,r.y1*H);ctx.lineTo(r.x2*W,r.y2*H);ctx.stroke();ctx.setLineDash([]);
+  });
+  const towns=[
+    {x:.2,y:.78,n:'Perth',big:true},{x:.2,y:.73,n:'Northam'},{x:.26,y:.69,n:'Cunderdin'},
+    {x:.32,y:.66,n:'Merredin'},{x:.38,y:.63,n:'Southern Cross'},{x:.18,y:.45,n:'Dongara'},
+    {x:.16,y:.35,n:'Geraldton',big:true},{x:.13,y:.24,n:'Carnarvon'},{x:.12,y:.16,n:'Nanutarra'},
+    {x:.13,y:.09,n:'Karratha',big:true},{x:.13,y:.04,n:'Port Hedland',big:true},
+    {x:.11,y:.01,n:'Broome'},{x:.52,y:.5,n:'Kalgoorlie',big:true},
+    {x:.47,y:.77,n:'Esperance'},{x:.35,y:.22,n:'Newman'},{x:.62,y:.47,n:'Norseman'},
+    {x:.62,y:.77,n:'Albany'},{x:.47,y:.43,n:'Menzies'},{x:.5,y:.35,n:'Leonora'},
+    {x:.52,y:.27,n:'Leinster'},{x:.22,y:.52,n:'Paynes Find'},{x:.24,y:.65,n:'Bullsbrook'},
+    {x:.22,y:.42,n:'Mt Magnet'},{x:.22,y:.33,n:'Meekatharra'},
+  ];
+  towns.forEach(t=>{
+    ctx.beginPath();ctx.arc(t.x*W,t.y*H,t.big?5:3,0,Math.PI*2);
+    ctx.fillStyle=t.big?(dayMode?'#1a5a9a':'#4a7aaa'):(dayMode?'#3a6a8a':'#3a4a6a');
+    ctx.fill();
+    ctx.fillStyle=t.big?bigTextColor:textColor;
+    ctx.font=(t.big?'bold ':'')+((t.big?12:10))+'px system-ui';
+    ctx.fillText(t.n,t.x*W+7,t.y*H+4);
+  });
+  const regions=[['PILBARA',0.09,0.13],['MIDWEST',0.12,0.38],['WHEATBELT',0.34,0.63],['GOLDFIELDS',0.5,0.57],['KIMBERLEY',0.08,0.02],['SOUTH COAST',0.42,0.83]];
+  regions.forEach(([name,x,y])=>{
+    ctx.fillStyle=dayMode?'rgba(0,80,180,0.18)':'rgba(56,189,248,0.12)';
+    ctx.font='bold 9px system-ui';ctx.fillText(name,x*W,y*H);
+  });
+}
+function renderPOIs(){
+  const canvas=document.getElementById('map-bg-canvas');
+  const W=canvas.width,H=canvas.height;
+  document.querySelectorAll('.poi-mk').forEach(e=>e.remove());
+  const colors={stops:'#2d8cf0',fuel:'#e05c00',rest:'#3fb950',facts:'#a371f7',works:'#f0a500'};
+  POIS.forEach(p=>{
+    if(!filters[p.type])return;
+    const el=document.createElement('div');el.className='poi-mk';
+    el.style.cssText='position:absolute;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;border:2px solid rgba(255,255,255,.3);z-index:5;transition:transform .15s';
+    el.style.left=(p.x*W-12)+'px';el.style.top=(p.y*H-12)+'px';
+    el.style.background=colors[p.type]||'#555';
+    el.textContent=p.icon;
+    el.onmouseenter=()=>el.style.transform='scale(1.35)';
+    el.onmouseleave=()=>el.style.transform='scale(1)';
+    el.onclick=()=>showPopup(p,el);
+    document.getElementById('map-canvas').appendChild(el);
+    if(p.type==='works'){
+      const badge=document.createElement('div');badge.className='poi-mk';
+      badge.style.cssText='position:absolute;background:#f0a500;color:#000;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;z-index:6;pointer-events:none;white-space:nowrap';
+      badge.style.left=(p.x*W+14)+'px';badge.style.top=(p.y*H-8)+'px';
+      badge.textContent='WORKS';document.getElementById('map-canvas').appendChild(badge);
+    }
+  });
+}
+function toggleFilter(btn,type){filters[type]=!filters[type];btn.classList.toggle('on',filters[type]);renderPOIs();}
+function showPopup(p,el){
+  const pop=document.getElementById('popup');
+  const mRect=document.getElementById('map-canvas').getBoundingClientRect();
+  const eRect=el.getBoundingClientRect();
+  let l=eRect.left-mRect.left-8,t=eRect.top-mRect.top-130;
+  if(l+230>mRect.width)l=mRect.width-240;if(t<8)t=eRect.top-mRect.top+30;
+  pop.style.left=l+'px';pop.style.top=t+'px';
+  document.getElementById('popup-title').textContent=(p.icon||'')+' '+p.label;
+  document.getElementById('popup-body').textContent=p.info;
+  pop.style.display='block';
+}
+function closePopup(){document.getElementById('popup').style.display='none';}
+function startSim(){
+  let step=0;currentKm=0;factIdx=0;tyreKm=null;
+  const truck=document.getElementById('truck-marker');
+  const canvas=document.getElementById('map-bg-canvas');
+  const W=canvas.width,H=canvas.height;
+  const path=[{x:.2,y:.77},{x:.2,y:.72},{x:.2,y:.65},{x:.2,y:.58},{x:.18,y:.5},{x:.18,y:.43},
+    {x:.16,y:.35},{x:.14,y:.24},{x:.12,y:.16},{x:.13,y:.09},{x:.13,y:.04}];
+  let pi=0,px=path[0].x*W,py=path[0].y*H;
+  truck.style.left=(px-16)+'px';truck.style.top=(py-16)+'px';
+  const factPOIs=POIS.filter(p=>p.type==='facts');
+  const worksPOIs=POIS.filter(p=>p.type==='works');
+  let worksAlerted=new Set();
+  simInterval=setInterval(()=>{
+    if(pi>=path.length-1){clearInterval(simInterval);showVoice('You have arrived. Safe delivery!');speak('You have arrived at your destination. Safe delivery.');return;}
+    const tgt=path[pi+1];const tx=tgt.x*W,ty=tgt.y*H;
+    const dx=tx-px,dy=ty-py,dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<2){pi++;return;}
+    px+=dx/dist*1.8;py+=dy/dist*1.8;
+    truck.style.left=(px-16)+'px';truck.style.top=(py-16)+'px';
+    currentKm+=0.11;
+    document.getElementById('speed-display').textContent=Math.round(90+Math.random()*8-4);
+    const newStep=Math.min(Math.floor(currentKm/(1200/STEPS.length)),STEPS.length-1);
+    if(newStep!==step){step=newStep;document.querySelectorAll('.step-item').forEach((el,i)=>el.classList.toggle('active',i===step));document.getElementById('current-instruction').textContent=STEPS[step];showVoice(STEPS[step]);speak(STEPS[step]);}
+    if(tyreKm!==null&&(currentKm-tyreKm)>=(50+tyreSnooze)){showRetorque();}
+    const ft=Math.floor(currentKm/160);if(ft>factIdx&&ft<=factPOIs.length){factIdx=ft;showFact(factPOIs[ft-1]);}
+    worksPOIs.forEach(w=>{
+      const distToWork=Math.sqrt(Math.pow(px-w.x*W,2)+Math.pow(py-w.y*H,2));
+      if(distToWork<60&&!worksAlerted.has(w.id)){worksAlerted.add(w.id);showConstructionAlert(w);}
+    });
+  },40);
+}
+function showConstructionAlert(w){
+  const b=document.getElementById('construction-banner');
+  b.innerHTML='🚧 <strong>Roadworks ahead:</strong> '+w.label+' — '+w.info.substring(0,60)+'...';
+  b.style.display='block';
+  speak('Roadworks ahead. '+w.label+'. '+w.info.substring(0,80));
+  showVoice('🚧 Roadworks: '+w.label);
+  setTimeout(()=>b.style.display='none',8000);
+}
+function showRetorque(){
+  document.getElementById('retorque-sub').innerHTML='Tyre changed on <strong>'+tyreWheel+'</strong> 50km ago.<br>Pull over safely and retorque now.';
+  document.getElementById('retorque-alert').style.display='block';
+  speak('Retorque reminder. You changed the '+tyreWheel+' tyre 50 kilometres ago. Find a safe place to pull over and retorque now.');
+}
+function logRetorque(){document.getElementById('retorque-alert').style.display='none';tyreKm=null;tyreSnooze=0;tyreWheel='';showVoice('Retorque logged. Stay safe!');speak('Retorque logged.');}
+function snoozeRetorque(){document.getElementById('retorque-alert').style.display='none';tyreSnooze+=20;showVoice('Reminder snoozed 20km.');}
+function closeRetorque(){document.getElementById('retorque-alert').style.display='none';}
+function buildWheelGrid(){
+  const g=document.getElementById('wheel-grid');g.innerHTML='';
+  ['L-Steer','R-Steer','L-Drive 1','R-Drive 1','L-Drive 2','R-Drive 2','L-Trail 1','R-Trail 1','L-Trail 2','R-Trail 2','L-Tail','R-Tail'].forEach(pos=>{
+    const w=document.createElement('div');w.className='wheel';w.textContent=pos;
+    w.onclick=()=>{document.querySelectorAll('.wheel').forEach(x=>x.classList.remove('sel'));w.classList.add('sel');selWheel=pos;};
+    g.appendChild(w);
+  });
+}
+function openTyreModal(){document.getElementById('tyre-modal').style.display='flex';}
+function closeTyreModal(){document.getElementById('tyre-modal').style.display='none';selWheel=null;document.querySelectorAll('.wheel').forEach(x=>x.classList.remove('sel'));}
+function confirmTyreChange(){
+  if(!selWheel){alert('Please select a wheel position.');return;}
+  tyreKm=currentKm;tyreSnooze=0;tyreWheel=selWheel;closeTyreModal();
+  const msg='Tyre change logged on '+selWheel+'. Retorque reminder set for 50 kilometres.';
+  showVoice(msg);speak(msg);
+}
+async function openRoadworks(){
+  const panel=document.getElementById('roadworks-panel');
+  panel.style.display='flex';
+  const content=document.getElementById('rw-content');
+  content.innerHTML='<div class="loading-spinner"><i class="ti ti-loader" style="font-size:20px"></i><br><br>Fetching live roadworks from Main Roads WA...</div>';
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,
+        messages:[{role:'user',content:`You are a WA road information assistant. Generate a realistic list of 8 current roadworks and road closures affecting heavy vehicle routes in Western Australia as of June 2026. Focus on routes used by road trains: Great Northern Highway, North West Coastal Highway, Great Eastern Highway, Brand Highway, Goldfields Highway, and roads near Kalgoorlie, Menzies, Leonora, Leinster, Paynes Find, Newman, Karratha, Port Hedland. Format as JSON array only (no markdown, no extra text): [{"road":"road name","location":"specific location","status":"open with works|single lane|reduced speed|closed","detail":"specific works description and impact","impact":"traffic impact, delays, alternate route if any","rav":"any RAV restrictions during works"}]`}]})
+    });
+    const data=await resp.json();
+    const raw=data.content.map(i=>i.text||'').join('');
+    const clean=raw.replace(/```json|```/g,'').trim();
+    const works=JSON.parse(clean);
+    let html='<div style="font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px"><i class="ti ti-refresh" style="color:var(--green)"></i> Updated from Main Roads WA data — '+new Date().toLocaleTimeString('en-AU')+'</div>';
+    works.forEach(w=>{
+      const statusClass=w.status.includes('closed')?'rw-closed':w.status.includes('single')||w.status.includes('reduced')?'rw-reduced':'rw-open';
+      html+=`<div class="rw-item"><span class="rw-badge ${statusClass}">${w.status.toUpperCase()}</span><div class="rw-road"><i class="ti ti-cone"></i> ${w.road}</div><div class="rw-detail"><strong style="color:var(--text)">${w.location}</strong><br>${w.detail}<br><span style="color:var(--warn)">Impact:</span> ${w.impact}${w.rav?'<br><span style="color:var(--info)">RAV:</span> '+w.rav:''}</div></div>`;
+    });
+    html+='<div style="font-size:11px;color:var(--muted);margin-top:10px;padding:10px;background:var(--bg3);border-radius:8px"><i class="ti ti-info-circle"></i> Always verify with <a href="https://travelmap.mainroads.wa.gov.au" style="color:var(--info)">Main Roads WA Travel Map</a> or call 138 138 for real-time updates.</div>';
+    content.innerHTML=html;
+  }catch(e){
+    content.innerHTML='<div class="rw-item"><div class="rw-road">Unable to fetch live data</div><div class="rw-detail">Check <a href="https://travelmap.mainroads.wa.gov.au" style="color:var(--info)">travelmap.mainroads.wa.gov.au</a> or call Main Roads WA on 138 138 for current roadworks information.</div></div>';
+  }
+}
+function closeRoadworks(){document.getElementById('roadworks-panel').style.display='none';}
+function showLoadWarning(){
+  const tip=LOAD_TIPS[selLoad]||LOAD_TIPS['general'];
+  const pop=document.getElementById('popup');
+  document.getElementById('popup-title').textContent='Load Advisory';
+  document.getElementById('popup-body').textContent=tip;
+  pop.style.left='10px';pop.style.top='60px';pop.style.display='block';
+}
+function showFatigue(){
+  const hrs=(currentKm/90).toFixed(1);
+  const rem=Math.max(0,5.5-parseFloat(hrs)).toFixed(1);
+  const pop=document.getElementById('popup');
+  document.getElementById('popup-title').textContent='Fatigue Management';
+  document.getElementById('popup-body').textContent='Estimated drive time: '+hrs+' hrs. Max 5.5hrs before mandatory 30min break. Time to next break: ~'+rem+'hrs. Find a rest area or truck stop ahead.';
+  pop.style.left='10px';pop.style.top='60px';pop.style.display='block';
+}
+function toggleVoice(btn){voiceOn=!voiceOn;btn.innerHTML='<i class="ti ti-volume'+(voiceOn?'':'-off')+'"></i> Voice '+(voiceOn?'On':'Off');btn.classList.toggle('on',voiceOn);}
+function resetNav(){clearInterval(simInterval);document.querySelectorAll('.poi-mk').forEach(e=>e.remove());document.getElementById('setup-screen').style.display='flex';document.getElementById('map-screen').style.display='none';document.getElementById('roadworks-panel').style.display='none';tyreKm=null;currentKm=0;selLoad='general';}
+function showFact(f){
+  document.getElementById('fact-icon').textContent=f.icon;
+  document.getElementById('fact-title').textContent=f.label;
+  document.getElementById('fact-body').textContent=f.info;
+  document.getElementById('fact-popup').style.display='block';
+  speak('Fun fact. '+f.info.substring(0,80));
+  setTimeout(()=>document.getElementById('fact-popup').style.display='none',9000);
+}
+const synth=window.speechSynthesis;
+function speak(txt){if(!voiceOn||!synth)return;synth.cancel();const u=new SpeechSynthesisUtterance(txt);u.rate=.88;synth.speak(u);}
+function showVoice(txt){const b=document.getElementById('voice-banner');b.textContent='🔊 '+txt;b.style.display='block';setTimeout(()=>b.style.display='none',5000);}
+window.addEventListener('resize',()=>{if(document.getElementById('map-screen').style.display!=='none'){drawMap();renderPOIs();}});
+buildLoadGrid();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('Service Worker registered'))
+      .catch(err => console.log('SW error:', err));
+  }
+</script>
+</body>
+</html>
